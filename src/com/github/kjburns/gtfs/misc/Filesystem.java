@@ -1,4 +1,4 @@
-package com.github.kjburns.gtfs.csv;
+package com.github.kjburns.gtfs.misc;
 
 import java.io.File;
 import java.io.FileInputStream;
