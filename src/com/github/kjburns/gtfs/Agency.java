@@ -18,6 +18,7 @@
  *  
  * Revision Log:
  *   2016-05-01  Basic functionality
+ *   2016-05-01  Make FIELD_NAME_AGENCY_ID package-private
  */
 package com.github.kjburns.gtfs;
 
@@ -40,7 +41,7 @@ public class Agency {
 	private static final String FIELD_NAME_AGENCY_TIMEZONE = "agency_timezone";
 	private static final String FIELD_NAME_AGENCY_URL = "agency_url";
 	private static final String FIELD_NAME_AGENCY_NAME = "agency_name";
-	private static final String FIELD_NAME_AGENCY_ID = "agency_id";
+	static final String FIELD_NAME_AGENCY_ID = "agency_id";
 	private String[] requiredFields = { 
 			FIELD_NAME_AGENCY_NAME, 
 			FIELD_NAME_AGENCY_URL,

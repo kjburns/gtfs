@@ -19,6 +19,8 @@
  * Revision Log:
  *   2016-04-29  Load zip file from disk
  *   2016-05-01  Load and retrieve transit agencies
+ *   2016-05-01  Raise exception if dataset-unique field contains duplicate
+ *               values
  */
 package com.github.kjburns.gtfs;
 
@@ -56,10 +58,12 @@ public class GtfsFile implements AutoCloseable {
 	 * canceled prematurely 
 	 * @throws MissingRequiredFieldException if any of the files have a 
 	 * required field which is missing.
+	 * @throws DatasetUniquenessException if a file with a dataset-unique
+	 * field contains illegal duplicate values
 	 */
 	public GtfsFile(String path, SwingWorker<?, ?> worker) 
 			throws IOException, InterruptedException, 
-					MissingRequiredFieldException {
+					MissingRequiredFieldException, DatasetUniquenessException {
 		this.zipFile = new ZipWrapper(path, worker);
 		if (worker != null) {
 			if (worker.isCancelled()) {
@@ -86,7 +90,8 @@ public class GtfsFile implements AutoCloseable {
 	}
 	
 	private void loadAgencies() 
-			throws IOException, MissingRequiredFieldException {
+			throws IOException, MissingRequiredFieldException, 
+					DatasetUniquenessException {
 		File agencyFile = this.zipFile.getEntry(FILENAME_AGENCY);
 		this.transitAgencies = new AgencyCollection(agencyFile);
 	}

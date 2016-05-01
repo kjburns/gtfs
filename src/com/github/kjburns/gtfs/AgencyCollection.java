@@ -18,6 +18,8 @@
  *  
  * Revision Log:
  *   2016-05-01  Basic functionality
+ *   2016-05-01  Raise exception if agency.txt contains duplicate values for
+ *               agency_id
  */
 package com.github.kjburns.gtfs;
 
@@ -34,13 +36,23 @@ public class AgencyCollection implements Iterable<Agency> {
 	private HashMap<String, Agency> agencies = new HashMap<>();
 	
 	AgencyCollection(File f) 
-			throws IOException, MissingRequiredFieldException {
+			throws IOException, MissingRequiredFieldException, 
+					DatasetUniquenessException {
 		try (InputStream is = new FileInputStream(f)) {
 			CsvFile table = new CsvFile(is);
 			
 			for (int i = 1; i <= table.getRecordCount(); i++) {
 				Agency a = new Agency(table, i);
-				this.agencies.put(a.getAgencyID(), a);
+				String aid = a.getAgencyID();
+				if (this.agencies.containsKey(aid)) {
+					throw new DatasetUniquenessException(
+							GtfsFile.FILENAME_AGENCY, 
+							Agency.FIELD_NAME_AGENCY_ID, 
+							aid);
+				}
+				else {
+					this.agencies.put(aid, a);
+				}
 			}
 		} catch (MissingRequiredFieldException ex) {
 			/*
