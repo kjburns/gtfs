@@ -399,4 +399,8 @@ public class CsvFile {
 	public boolean isValid() {
 		return valid;
 	}
+	
+	public int getRecordCount() {
+		return this.getHeight() - 1;
+	}
 }

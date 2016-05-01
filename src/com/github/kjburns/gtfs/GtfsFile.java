@@ -1,4 +1,5 @@
 /*
+ * GtfsFile.java
  * General Transit Feed Specification
  * 
  * Copyright 2016 Kevin J. Burns
@@ -17,9 +18,11 @@
  *  
  * Revision Log:
  *   2016-04-29  Load zip file from disk
+ *   2016-05-01  Load and retrieve transit agencies
  */
 package com.github.kjburns.gtfs;
 
+import java.io.File;
 import java.io.IOException;
 
 import javax.swing.SwingWorker;
@@ -37,6 +40,10 @@ import com.github.kjburns.gtfs.misc.ZipWrapper;
 public class GtfsFile implements AutoCloseable {
 	private ZipWrapper zipFile = null;
 	
+	private AgencyCollection transitAgencies;
+
+	static final String FILENAME_AGENCY = "agency.txt";
+	
 	/**
 	 * Loads a GTFS file from disk. The file is loaded lazily (i.e., individual
 	 * text files are only parsed as they are needed).
@@ -47,21 +54,56 @@ public class GtfsFile implements AutoCloseable {
 	 * @throws IOException If there are problems opening the supplied zip file
 	 * @throws InterruptedException if a worker thread was passed and it was
 	 * canceled prematurely 
+	 * @throws MissingRequiredFieldException if any of the files have a 
+	 * required field which is missing.
 	 */
 	public GtfsFile(String path, SwingWorker<?, ?> worker) 
-			throws IOException, InterruptedException {
+			throws IOException, InterruptedException, 
+					MissingRequiredFieldException {
 		this.zipFile = new ZipWrapper(path, worker);
 		if (worker != null) {
 			if (worker.isCancelled()) {
 				throw new InterruptedException();
 			}
 		}
+
+		/*
+		 * The following files are required, so if IOException is raised it
+		 * will be passed along to caller
+		 */
+		try {
+			this.loadAgencies();
+		} catch (MissingRequiredFieldException ex) {
+			/*
+			 * If a required field is missing, the file is invalid. Pass along
+			 * the exception for now, although later it may be desirable to
+			 * allow processing to continue because the missing fields in this
+			 * file don't necessarily preclude the useful processing of the
+			 * feed.
+			 */
+			throw ex;
+		}
 	}
 	
+	private void loadAgencies() 
+			throws IOException, MissingRequiredFieldException {
+		File agencyFile = this.zipFile.getEntry(FILENAME_AGENCY);
+		this.transitAgencies = new AgencyCollection(agencyFile);
+	}
+
 	@Override
 	public void close() throws IOException {
 		if (this.zipFile != null) {
 			this.zipFile.close();
 		}
+	}
+
+	/**
+	 * Gets a collection of transit agencies that are represented in this
+	 * file.
+	 * @return the transitAgencies
+	 */
+	public AgencyCollection getTransitAgencies() {
+		return this.transitAgencies;
 	}
 }
