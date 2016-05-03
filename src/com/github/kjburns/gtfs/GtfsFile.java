@@ -21,11 +21,13 @@
  *   2016-05-01  Load and retrieve transit agencies
  *   2016-05-01  Raise exception if dataset-unique field contains duplicate
  *               values
+ *   2016-05-02  Load and retrieve stops
  */
 package com.github.kjburns.gtfs;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 
 import javax.swing.SwingWorker;
 
@@ -43,8 +45,11 @@ public class GtfsFile implements AutoCloseable {
 	private ZipWrapper zipFile = null;
 	
 	private AgencyCollection transitAgencies;
+	private StopCollection stops;
 
 	static final String FILENAME_AGENCY = "agency.txt";
+	static final String FILENAME_STOPS = "stops.txt";
+	static final String FILENAME_FARE_RULES = "fare_rules.txt";
 	
 	/**
 	 * Loads a GTFS file from disk. The file is loaded lazily (i.e., individual
@@ -60,10 +65,11 @@ public class GtfsFile implements AutoCloseable {
 	 * required field which is missing.
 	 * @throws DatasetUniquenessException if a file with a dataset-unique
 	 * field contains illegal duplicate values
+	 * @throws InvalidDataException if any data is invalid by the spec
 	 */
 	public GtfsFile(String path, SwingWorker<?, ?> worker) 
 			throws IOException, InterruptedException, 
-					MissingRequiredFieldException, DatasetUniquenessException {
+					MissingRequiredFieldException, DatasetUniquenessException, InvalidDataException {
 		this.zipFile = new ZipWrapper(path, worker);
 		if (worker != null) {
 			if (worker.isCancelled()) {
@@ -77,6 +83,7 @@ public class GtfsFile implements AutoCloseable {
 		 */
 		try {
 			this.loadAgencies();
+			this.loadStops();
 		} catch (MissingRequiredFieldException ex) {
 			/*
 			 * If a required field is missing, the file is invalid. Pass along
@@ -95,6 +102,13 @@ public class GtfsFile implements AutoCloseable {
 		File agencyFile = this.zipFile.getEntry(FILENAME_AGENCY);
 		this.transitAgencies = new AgencyCollection(agencyFile);
 	}
+	
+	private void loadStops() 
+			throws IOException, InvalidDataException, 
+			MissingRequiredFieldException, DatasetUniquenessException {
+		File stopsFile = this.zipFile.getEntry(FILENAME_STOPS);
+		this.stops = new StopCollection(this, stopsFile);
+	}
 
 	@Override
 	public void close() throws IOException {
@@ -110,5 +124,20 @@ public class GtfsFile implements AutoCloseable {
 	 */
 	public AgencyCollection getTransitAgencies() {
 		return this.transitAgencies;
+	}
+	
+	boolean isFilePresent(String filename) {
+		return this.zipFile.getEntry(filename) != null;
+	}
+	
+	public StopCollection getStops() {
+		return this.stops;
+	}
+	
+	public String getTimezone() {
+		Iterator<Agency> it = this.transitAgencies.iterator();
+		Agency agency = it.next();
+		
+		return agency.getTimeZone();
 	}
 }

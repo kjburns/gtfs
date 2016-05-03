@@ -1,5 +1,5 @@
 /*
- * MissingRequiredFieldException.java
+ * InvalidDataException.java
  * General Transit Feed Specification
  * 
  * Copyright 2016 Kevin J. Burns
@@ -21,14 +21,19 @@
  */
 package com.github.kjburns.gtfs;
 
-public class MissingRequiredFieldException extends Exception {
-	private static final long serialVersionUID = 1348355953927095849L;
+public class InvalidDataException extends Exception {
+	private static final long serialVersionUID = -5001446423363512177L;
 
-	public String file;
-	public String missingFieldName;
+	public String filename;
+	public String fieldName;
+	public int record;
+	public String badData;
 	
-	public MissingRequiredFieldException(String file, String fieldName) {
-		this.file = file;
-		this.missingFieldName = fieldName;
+	InvalidDataException(String filename, String fieldName, 
+			int record, String badData) {
+		this.fieldName = fieldName;
+		this.filename = filename;
+		this.record = record;
+		this.badData = badData;
 	}
 }
