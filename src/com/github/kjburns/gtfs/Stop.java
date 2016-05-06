@@ -18,10 +18,13 @@
  *  
  * Revision Log:
  *   2016-05-02  Basic functionality
+ *   2016-05-06  Add transfer rules from transfer.txt
  */
 package com.github.kjburns.gtfs;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import com.github.kjburns.gtfs.misc.CsvFile;
 import com.github.kjburns.gtfs.misc.CsvFile.FieldNotFoundException;
@@ -70,6 +73,9 @@ public class Stop {
 	private double latitude;
 	private double longitude;
 	private WheelchairAccessibilityEnum accessibility;
+	
+	private List<TransferRule> outgoingTransfers = new ArrayList<>();
+	private List<TransferRule> incomingTransfers = new ArrayList<>();
 	
 	/**
 	 * Reads the specified row of the table to create either a Stop or a 
@@ -369,5 +375,29 @@ public class Stop {
 		}
 		
 		return this.accessibility;
+	}
+
+	void addOutgoingTransferRule(TransferRule rule) {
+		this.outgoingTransfers.add(rule);
+	}
+
+	void addIncomingTransferRule(TransferRule rule) {
+		this.incomingTransfers.add(rule);
+	}
+
+	/**
+	 * Gets a list of transfer rules that have this stop as the origin.
+	 * @return the outgoingTransfers
+	 */
+	public List<TransferRule> getOutgoingTransfers() {
+		return this.outgoingTransfers;
+	}
+
+	/**
+	 * Gets a list of transfer rules that have this stop as the destination.
+	 * @return the incomingTransfers
+	 */
+	public List<TransferRule> getIncomingTransfers() {
+		return this.incomingTransfers;
 	}
 }

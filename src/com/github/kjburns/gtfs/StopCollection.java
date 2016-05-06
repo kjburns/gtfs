@@ -18,6 +18,7 @@
  *  
  * Revision Log:
  *   2016-05-02  Basic functionality
+ *   2016-05-06  Add transfer rules from transfers.txt
  */
 package com.github.kjburns.gtfs;
 
@@ -121,5 +122,25 @@ public class StopCollection {
 	 */
 	public Stop getStopById(String id) {
 		return this.stops.get(id);
+	}
+
+	/**
+	 * Notifies origin and destination stops of a transfer rule affecting them.
+	 * If either the origin or destination stop does not exist, neither stop
+	 * is notified.
+	 * @param rule
+	 */
+	void registerTransferRule(TransferRule rule) {
+		Stop fromStop = this.getStopById(rule.getFromStopId());
+		Stop toStop = this.getStopById(rule.getToStopId());
+		if (fromStop == null) {
+			return;
+		}
+		if (toStop == null) { 
+			return;
+		}
+		
+		fromStop.addOutgoingTransferRule(rule);
+		toStop.addIncomingTransferRule(rule);
 	}
 }

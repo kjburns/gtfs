@@ -22,15 +22,18 @@
  *   2016-05-01  Raise exception if dataset-unique field contains duplicate
  *               values
  *   2016-05-02  Load and retrieve stops
+ *   2016-05-06  Load and process transfers.txt
  */
 package com.github.kjburns.gtfs;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Iterator;
 
 import javax.swing.SwingWorker;
 
+import com.github.kjburns.gtfs.misc.CsvFile;
 import com.github.kjburns.gtfs.misc.ZipWrapper;
 
 /**
@@ -50,6 +53,7 @@ public class GtfsFile implements AutoCloseable {
 	static final String FILENAME_AGENCY = "agency.txt";
 	static final String FILENAME_STOPS = "stops.txt";
 	static final String FILENAME_FARE_RULES = "fare_rules.txt";
+	static final String FILENAME_TRANSFERS = "transfers.txt";
 	
 	/**
 	 * Loads a GTFS file from disk. The file is loaded lazily (i.e., individual
@@ -94,8 +98,38 @@ public class GtfsFile implements AutoCloseable {
 			 */
 			throw ex;
 		}
+		
+		/*
+		 * The following files are optional.
+		 */
+		try {
+			this.loadTransfers();
+		} catch (IOException| MissingRequiredFieldException | 
+				InvalidDataException ex) {
+			/*
+			 * Since the file is optional, do nothing for now, but maybe
+			 * log it or something later 
+			 */
+		}
 	}
 	
+	private void loadTransfers() 
+			throws IOException, MissingRequiredFieldException, 
+				InvalidDataException {
+		File transfersFile = this.zipFile.getEntry(FILENAME_TRANSFERS);
+		if (!transfersFile.exists()) {
+			return;
+		}
+		
+		try(FileInputStream fis = new FileInputStream(transfersFile)) {
+			CsvFile table = new CsvFile(fis);
+			for (int i = 1; i <= table.getRecordCount(); i++) {
+				TransferRule rule = new TransferRule(table, i);
+				this.stops.registerTransferRule(rule);
+			}
+		}
+	}
+
 	private void loadAgencies() 
 			throws IOException, MissingRequiredFieldException, 
 					DatasetUniquenessException {
