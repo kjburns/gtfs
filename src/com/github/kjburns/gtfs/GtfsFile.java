@@ -16,13 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *  
- * Revision Log:
+ * Development Log:
  *   2016-04-29  Load zip file from disk
  *   2016-05-01  Load and retrieve transit agencies
  *   2016-05-01  Raise exception if dataset-unique field contains duplicate
  *               values
  *   2016-05-02  Load and retrieve stops
  *   2016-05-06  Load and process transfers.txt
+ *   2016-05-07  Load and process routes.txt
+ * Revision Log:
  */
 package com.github.kjburns.gtfs;
 
@@ -49,11 +51,13 @@ public class GtfsFile implements AutoCloseable {
 	
 	private AgencyCollection transitAgencies;
 	private StopCollection stops;
+	private RouteCollection routes;
 
 	static final String FILENAME_AGENCY = "agency.txt";
 	static final String FILENAME_STOPS = "stops.txt";
 	static final String FILENAME_FARE_RULES = "fare_rules.txt";
 	static final String FILENAME_TRANSFERS = "transfers.txt";
+	static final String FILENAME_ROUTES = "routes.txt";
 	
 	/**
 	 * Loads a GTFS file from disk. The file is loaded lazily (i.e., individual
@@ -88,6 +92,7 @@ public class GtfsFile implements AutoCloseable {
 		try {
 			this.loadAgencies();
 			this.loadStops();
+			this.loadRoutes();
 		} catch (MissingRequiredFieldException ex) {
 			/*
 			 * If a required field is missing, the file is invalid. Pass along
@@ -113,6 +118,13 @@ public class GtfsFile implements AutoCloseable {
 		}
 	}
 	
+	private void loadRoutes() 
+			throws IOException, MissingRequiredFieldException, 
+					InvalidDataException {
+		File routesFile = this.zipFile.getEntry(FILENAME_ROUTES);
+		this.routes = new RouteCollection(routesFile);
+	}
+
 	private void loadTransfers() 
 			throws IOException, MissingRequiredFieldException, 
 				InvalidDataException {
@@ -164,14 +176,30 @@ public class GtfsFile implements AutoCloseable {
 		return this.zipFile.getEntry(filename) != null;
 	}
 	
+	/**
+	 * Gets a collection of stops listed in this file
+	 * @return
+	 */
 	public StopCollection getStops() {
 		return this.stops;
 	}
 	
+	/**
+	 * Gets the time zone used in this file 
+	 * @return
+	 */
 	public String getTimezone() {
 		Iterator<Agency> it = this.transitAgencies.iterator();
 		Agency agency = it.next();
 		
 		return agency.getTimeZone();
+	}
+	
+	/**
+	 * Gets the routes listed in this file
+	 * @return
+	 */
+	public RouteCollection getRoutes() {
+		return this.routes;
 	}
 }
