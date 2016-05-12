@@ -24,6 +24,7 @@
  *   2016-05-02  Load and retrieve stops
  *   2016-05-06  Load and process transfers.txt
  *   2016-05-07  Load and process routes.txt
+ *   2016-05-11  Load and process shapes.txt
  * Revision Log:
  */
 package com.github.kjburns.gtfs;
@@ -52,12 +53,14 @@ public class GtfsFile implements AutoCloseable {
 	private AgencyCollection transitAgencies;
 	private StopCollection stops;
 	private RouteCollection routes;
+	private TransitShapeCollection shapes;
 
 	static final String FILENAME_AGENCY = "agency.txt";
 	static final String FILENAME_STOPS = "stops.txt";
 	static final String FILENAME_FARE_RULES = "fare_rules.txt";
 	static final String FILENAME_TRANSFERS = "transfers.txt";
 	static final String FILENAME_ROUTES = "routes.txt";
+	static final String FILENAME_SHAPES = "shapes.txt";
 	
 	/**
 	 * Loads a GTFS file from disk. The file is loaded lazily (i.e., individual
@@ -77,7 +80,8 @@ public class GtfsFile implements AutoCloseable {
 	 */
 	public GtfsFile(String path, SwingWorker<?, ?> worker) 
 			throws IOException, InterruptedException, 
-					MissingRequiredFieldException, DatasetUniquenessException, InvalidDataException {
+					MissingRequiredFieldException, DatasetUniquenessException, 
+					InvalidDataException {
 		this.zipFile = new ZipWrapper(path, worker);
 		if (worker != null) {
 			if (worker.isCancelled()) {
@@ -116,8 +120,27 @@ public class GtfsFile implements AutoCloseable {
 			 * log it or something later 
 			 */
 		}
+		try {
+			this.loadShapes();
+		} catch (Exception ex) {
+			/*
+			 * Since the file is optional, do nothing for now, but maybe
+			 * log it or something later 
+			 */
+		}
 	}
 	
+	private void loadShapes() 
+			throws IOException, MissingRequiredFieldException, 
+					InvalidDataException {
+		File shapesFile = this.zipFile.getEntry(FILENAME_SHAPES);
+		if (!shapesFile.exists()) {
+			return;
+		}
+		
+		this.shapes = new TransitShapeCollection(shapesFile);
+	}
+
 	private void loadRoutes() 
 			throws IOException, MissingRequiredFieldException, 
 					InvalidDataException {
@@ -201,5 +224,14 @@ public class GtfsFile implements AutoCloseable {
 	 */
 	public RouteCollection getRoutes() {
 		return this.routes;
+	}
+
+	/**
+	 * Gets the shapes listed in this file. Since shapes.txt is optional,
+	 * the return value may be null.
+	 * @return
+	 */
+	public TransitShapeCollection getShapes() {
+		return this.shapes;
 	}
 }
