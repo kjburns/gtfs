@@ -25,6 +25,7 @@
  *   2016-05-06  Load and process transfers.txt
  *   2016-05-07  Load and process routes.txt
  *   2016-05-11  Load and process shapes.txt
+ *   2016-05-11  Add ParentStationNotStation exception when loading stops
  * Revision Log:
  */
 package com.github.kjburns.gtfs;
@@ -77,11 +78,13 @@ public class GtfsFile implements AutoCloseable {
 	 * @throws DatasetUniquenessException if a file with a dataset-unique
 	 * field contains illegal duplicate values
 	 * @throws InvalidDataException if any data is invalid by the spec
+	 * @throws ParentStationNotStationException if a stop is listed with a
+	 * parent station, but the alleged parent station is not a station
 	 */
 	public GtfsFile(String path, SwingWorker<?, ?> worker) 
 			throws IOException, InterruptedException, 
 					MissingRequiredFieldException, DatasetUniquenessException, 
-					InvalidDataException {
+					InvalidDataException, ParentStationNotStationException {
 		this.zipFile = new ZipWrapper(path, worker);
 		if (worker != null) {
 			if (worker.isCancelled()) {
@@ -174,7 +177,8 @@ public class GtfsFile implements AutoCloseable {
 	
 	private void loadStops() 
 			throws IOException, InvalidDataException, 
-			MissingRequiredFieldException, DatasetUniquenessException {
+			MissingRequiredFieldException, DatasetUniquenessException, 
+			ParentStationNotStationException {
 		File stopsFile = this.zipFile.getEntry(FILENAME_STOPS);
 		this.stops = new StopCollection(this, stopsFile);
 	}

@@ -19,6 +19,8 @@
  * Revision Log:
  *   2016-05-02  Basic functionality
  *   2016-05-06  Add transfer rules from transfers.txt
+ *   2016-05-11  Replace a todo with thrown exception when a stop's parent
+ *               station is not really a station
  */
 package com.github.kjburns.gtfs;
 
@@ -49,10 +51,13 @@ public class StopCollection {
 	 * missing in the file
 	 * @throws DatasetUniquenessException If any set of two or more stops
 	 * in the file have the same stop id
+	 * @throws ParentStationNotStationException if a stop lists a parent
+	 * station that is not, in fact, a station. 
 	 */
 	StopCollection(GtfsFile gtfs, File stopsFile) 
 			throws IOException, InvalidDataException, 
-			MissingRequiredFieldException, DatasetUniquenessException {
+					MissingRequiredFieldException, DatasetUniquenessException, 
+					ParentStationNotStationException {
 		this.gtfs = gtfs;
 		try (FileInputStream fis = new FileInputStream(stopsFile)) {
 			CsvFile table = new CsvFile(fis);
@@ -84,7 +89,8 @@ public class StopCollection {
 		this.establishStopToStationRelations();
 	}
 
-	private void establishStopToStationRelations() {
+	private void establishStopToStationRelations() 
+			throws ParentStationNotStationException {
 		for (Stop stop : this.stops.values()) {
 			if (stop instanceof Station) {
 				/*
@@ -100,9 +106,8 @@ public class StopCollection {
 				 */
 			}
 			if (!(parentStop instanceof Station)) {
-				/*
-				 * TODO this is an error condition; parent must be a station
-				 */
+				throw new ParentStationNotStationException(
+						stop.getStopId(), parentStop.getStopId());
 			}
 			Station parent = (Station)parentStop;
 			parent.registerChildStop(stop);
