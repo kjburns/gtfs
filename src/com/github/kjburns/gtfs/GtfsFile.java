@@ -26,6 +26,7 @@
  *   2016-05-07  Load and process routes.txt
  *   2016-05-11  Load and process shapes.txt
  *   2016-05-11  Add ParentStationNotStation exception when loading stops
+ *   2016-05-15  Load and process calendar.txt and calendar_dates.txt
  * Revision Log:
  */
 package com.github.kjburns.gtfs;
@@ -33,7 +34,13 @@ package com.github.kjburns.gtfs;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.text.ParseException;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.Iterator;
+import java.util.TimeZone;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.swing.SwingWorker;
 
@@ -55,6 +62,10 @@ public class GtfsFile implements AutoCloseable {
 	private StopCollection stops;
 	private RouteCollection routes;
 	private TransitShapeCollection shapes;
+	private ServiceCalendar serviceCalendar;
+
+	private static final Pattern DATE_PATTERN = 
+				Pattern.compile("^(\\d{4})(\\d{2})(\\d{2})$");
 
 	static final String FILENAME_AGENCY = "agency.txt";
 	static final String FILENAME_STOPS = "stops.txt";
@@ -62,6 +73,8 @@ public class GtfsFile implements AutoCloseable {
 	static final String FILENAME_TRANSFERS = "transfers.txt";
 	static final String FILENAME_ROUTES = "routes.txt";
 	static final String FILENAME_SHAPES = "shapes.txt";
+	static final String FILENAME_CALENDAR = "calendar.txt";
+	static final String FILENAME_CALENDAR_OVERRIDES = "calendar_dates.txt";
 	
 	/**
 	 * Loads a GTFS file from disk. The file is loaded lazily (i.e., individual
@@ -100,6 +113,8 @@ public class GtfsFile implements AutoCloseable {
 			this.loadAgencies();
 			this.loadStops();
 			this.loadRoutes();
+			
+			this.serviceCalendar = new ServiceCalendar(this);
 		} catch (MissingRequiredFieldException ex) {
 			/*
 			 * If a required field is missing, the file is invalid. Pass along
@@ -237,5 +252,56 @@ public class GtfsFile implements AutoCloseable {
 	 */
 	public TransitShapeCollection getShapes() {
 		return this.shapes;
+	}
+
+	/**
+	 * Parses a date in yyyymmdd format.
+	 * @param date The date to parse
+	 * @return A GregorianCalendar object set to the specified date, in the
+	 * timezone of the gtfs file, and set to midnight local time.
+	 * @throws ParseException If the string cannot be parsed
+	 */
+	GregorianCalendar parseDate(String date) throws ParseException {
+		Matcher m = GtfsFile.DATE_PATTERN.matcher(date);
+		if (!m.matches()) {
+			throw new ParseException(date, 0);
+		}
+		int year = Integer.valueOf(m.group(1));
+		int month = Integer.valueOf(m.group(2));
+		int day = Integer.valueOf(m.group(3));
+		
+		TimeZone tz = TimeZone.getTimeZone(getTimezone());
+		GregorianCalendar ret = new GregorianCalendar(tz);
+		/*
+		 * read something from the calendar so the time zone will take effect 
+		 */
+		ret.get(Calendar.DAY_OF_MONTH);
+		/*
+		 * now set to midnight local time
+		 */
+		ret.set(Calendar.HOUR, 0);
+		ret.set(Calendar.MINUTE, 0);
+		ret.set(Calendar.SECOND, 0);
+		ret.get(Calendar.HOUR);
+		/*
+		 * now set date
+		 */
+		ret.set(Calendar.YEAR, year);
+		ret.set(Calendar.MONTH, month - 1);
+		ret.set(Calendar.DAY_OF_MONTH, day);
+		ret.get(Calendar.DAY_OF_MONTH);
+		
+		return ret;
+	}
+	
+	ZipWrapper getZipFile() {
+		return this.zipFile;
+	}
+
+	/**
+	 * @return the serviceCalendar
+	 */
+	public ServiceCalendar getServiceCalendar() {
+		return this.serviceCalendar;
 	}
 }
