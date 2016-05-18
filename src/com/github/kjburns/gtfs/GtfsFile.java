@@ -27,6 +27,7 @@
  *   2016-05-11  Load and process shapes.txt
  *   2016-05-11  Add ParentStationNotStation exception when loading stops
  *   2016-05-15  Load and process calendar.txt and calendar_dates.txt
+ *   2016-05-18  Load and process trips.txt
  * Revision Log:
  */
 package com.github.kjburns.gtfs;
@@ -63,6 +64,7 @@ public class GtfsFile implements AutoCloseable {
 	private RouteCollection routes;
 	private TransitShapeCollection shapes;
 	private ServiceCalendar serviceCalendar;
+	private TripCollection trips;
 
 	private static final Pattern DATE_PATTERN = 
 				Pattern.compile("^(\\d{4})(\\d{2})(\\d{2})$");
@@ -75,6 +77,7 @@ public class GtfsFile implements AutoCloseable {
 	static final String FILENAME_SHAPES = "shapes.txt";
 	static final String FILENAME_CALENDAR = "calendar.txt";
 	static final String FILENAME_CALENDAR_OVERRIDES = "calendar_dates.txt";
+	static final String FILENAME_TRIPS = "trips.txt";
 	
 	/**
 	 * Loads a GTFS file from disk. The file is loaded lazily (i.e., individual
@@ -113,6 +116,7 @@ public class GtfsFile implements AutoCloseable {
 			this.loadAgencies();
 			this.loadStops();
 			this.loadRoutes();
+			this.loadTrips();
 			
 			this.serviceCalendar = new ServiceCalendar(this);
 		} catch (MissingRequiredFieldException ex) {
@@ -148,6 +152,13 @@ public class GtfsFile implements AutoCloseable {
 		}
 	}
 	
+	private void loadTrips() 
+			throws IOException, MissingRequiredFieldException, 
+					InvalidDataException, DatasetUniquenessException {
+		File tripsFile = this.zipFile.getEntry(FILENAME_TRIPS);
+		this.trips = new TripCollection(tripsFile);
+	}
+
 	private void loadShapes() 
 			throws IOException, MissingRequiredFieldException, 
 					InvalidDataException {
@@ -303,5 +314,12 @@ public class GtfsFile implements AutoCloseable {
 	 */
 	public ServiceCalendar getServiceCalendar() {
 		return this.serviceCalendar;
+	}
+
+	/**
+	 * @return the trips
+	 */
+	public TripCollection getTrips() {
+		return this.trips;
 	}
 }
