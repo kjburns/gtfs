@@ -28,6 +28,7 @@
  *   2016-05-11  Add ParentStationNotStation exception when loading stops
  *   2016-05-15  Load and process calendar.txt and calendar_dates.txt
  *   2016-05-18  Load and process trips.txt
+ *   2016-05-30  Load and process stop_times.txt
  * Revision Log:
  */
 package com.github.kjburns.gtfs;
@@ -65,6 +66,7 @@ public class GtfsFile implements AutoCloseable {
 	private TransitShapeCollection shapes;
 	private ServiceCalendar serviceCalendar;
 	private TripCollection trips;
+	private StopTimeCollection stopTimes;
 
 	private static final Pattern DATE_PATTERN = 
 				Pattern.compile("^(\\d{4})(\\d{2})(\\d{2})$");
@@ -78,6 +80,7 @@ public class GtfsFile implements AutoCloseable {
 	static final String FILENAME_CALENDAR = "calendar.txt";
 	static final String FILENAME_CALENDAR_OVERRIDES = "calendar_dates.txt";
 	static final String FILENAME_TRIPS = "trips.txt";
+	static final String FILENAME_STOP_TIMES = "stop_times.txt";
 	
 	/**
 	 * Loads a GTFS file from disk. The file is loaded lazily (i.e., individual
@@ -96,11 +99,14 @@ public class GtfsFile implements AutoCloseable {
 	 * @throws InvalidDataException if any data is invalid by the spec
 	 * @throws ParentStationNotStationException if a stop is listed with a
 	 * parent station, but the alleged parent station is not a station
+	 * @throws TerminalTimepointException if a trip fails to start and end 
+	 * with a timepoint
 	 */
 	public GtfsFile(String path, SwingWorker<?, ?> worker) 
 			throws IOException, InterruptedException, 
 					MissingRequiredFieldException, DatasetUniquenessException, 
-					InvalidDataException, ParentStationNotStationException {
+					InvalidDataException, ParentStationNotStationException, 
+					TerminalTimepointException {
 		this.zipFile = new ZipWrapper(path, worker);
 		if (worker != null) {
 			if (worker.isCancelled()) {
@@ -119,6 +125,7 @@ public class GtfsFile implements AutoCloseable {
 			this.loadTrips();
 			
 			this.serviceCalendar = new ServiceCalendar(this);
+			this.loadStopTimes();
 		} catch (MissingRequiredFieldException ex) {
 			/*
 			 * If a required field is missing, the file is invalid. Pass along
@@ -152,6 +159,13 @@ public class GtfsFile implements AutoCloseable {
 		}
 	}
 	
+	private void loadStopTimes() 
+			throws IOException, MissingRequiredFieldException, 
+			InvalidDataException, TerminalTimepointException {
+		File stopTimesFile = this.zipFile.getEntry(FILENAME_STOP_TIMES);
+		this.stopTimes = new StopTimeCollection(this, stopTimesFile);
+	}
+
 	private void loadTrips() 
 			throws IOException, MissingRequiredFieldException, 
 					InvalidDataException, DatasetUniquenessException {
@@ -321,5 +335,13 @@ public class GtfsFile implements AutoCloseable {
 	 */
 	public TripCollection getTrips() {
 		return this.trips;
+	}
+	
+	/**
+	 * Gets all timetables defined in this file
+	 * @return
+	 */
+	public StopTimeCollection getAllTimetables() {
+		return this.stopTimes;
 	}
 }

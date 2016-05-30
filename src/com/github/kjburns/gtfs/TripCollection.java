@@ -18,6 +18,7 @@
  *  
  * Revision Log:
  *   2016-05-18  Basic functionality
+ *   2016-05-30  getTripById()
  */
 package com.github.kjburns.gtfs;
 
@@ -81,6 +82,10 @@ public class TripCollection {
 	 */
 	public Iterator<Trip> getIterator() {
 		return this.trips.values().iterator();
+	}
+
+	public Trip getTripById(String tripId) {
+		return this.trips.get(tripId);
 	}
 }
 	
