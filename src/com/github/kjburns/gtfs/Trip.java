@@ -118,7 +118,7 @@ public class Trip {
 		 * Wheelchair Accessibility
 		 */
 		key = Trip.FIELD_NAME_WHEELCHAIR_ACCESSIBLE;
-		strValue = this.tableData.get(key).trim();
+		strValue = this.tableData.get(key);
 		InvalidDataException wheelchairException = new InvalidDataException(
 				GtfsFile.FILENAME_TRIPS, 
 				key, 
@@ -126,6 +126,7 @@ public class Trip {
 				strValue);
 		try {
 			if (strValue != null) {
+				strValue = strValue.trim();
 				if (strValue.length() > 0) {
 					int value = Integer.valueOf(strValue);
 					if ((value < 0) || (value >= 
@@ -148,7 +149,7 @@ public class Trip {
 		 * Bike Accessibility
 		 */
 		key = Trip.FIELD_NAME_BIKES_ALLOWED;
-		strValue = this.tableData.get(key).trim();
+		strValue = this.tableData.get(key);
 		InvalidDataException bikeException = new InvalidDataException(
 				GtfsFile.FILENAME_TRIPS, 
 				key, 
@@ -156,6 +157,7 @@ public class Trip {
 				strValue);
 		try {
 			if (strValue != null) {
+				strValue = strValue.trim();
 				if (strValue.length() > 0) {
 					int value = Integer.valueOf(strValue);
 					if ((value < 0) || (value >= 
@@ -177,13 +179,14 @@ public class Trip {
 		 * Direction
 		 */
 		key = Trip.FIELD_NAME_DIRECTION_ID;
-		strValue = this.tableData.get(key).trim();
+		strValue = this.tableData.get(key);
 		InvalidDataException dirException = new InvalidDataException(
 				GtfsFile.FILENAME_TRIPS, key, this.originalRecord, strValue);
 		try {
 			if (strValue != null) {
+				strValue = strValue.trim();
 				int value = Integer.valueOf(strValue);
-				if ((value < 0) || (value >= 1)) {
+				if ((value < 0) || (value > 1)) {
 					throw dirException;
 				}
 				this.directionId = value;

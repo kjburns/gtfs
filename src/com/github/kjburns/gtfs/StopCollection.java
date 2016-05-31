@@ -104,6 +104,7 @@ public class StopCollection {
 				/*
 				 * TODO should this be an error?
 				 */
+				return;
 			}
 			if (!(parentStop instanceof Station)) {
 				throw new ParentStationNotStationException(

@@ -195,6 +195,9 @@ public class GtfsFile implements AutoCloseable {
 			throws IOException, MissingRequiredFieldException, 
 				InvalidDataException {
 		File transfersFile = this.zipFile.getEntry(FILENAME_TRANSFERS);
+		if (transfersFile == null) {
+			return;
+		}
 		if (!transfersFile.exists()) {
 			return;
 		}

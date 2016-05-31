@@ -36,4 +36,9 @@ public class InvalidDataException extends Exception {
 		this.record = record;
 		this.badData = badData;
 	}
+	
+	@Override
+	public String toString() {
+		return "In " + filename + ": Record " + record + " " + fieldName + "=" + badData;
+	}
 }

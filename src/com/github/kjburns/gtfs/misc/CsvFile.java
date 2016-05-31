@@ -401,6 +401,10 @@ public class CsvFile {
 	}
 	
 	public int getRecordCount() {
-		return this.getHeight() - 1;
+		int height = this.getHeight() - 2;
+//		while(this.rows.get(height).size() < this.getWidth()) {
+//			height--;
+//		}
+		return height;
 	}
 }

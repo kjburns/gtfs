@@ -86,6 +86,7 @@ public class ServiceCalendar {
 							CalendarEntry.FIELD_NAME_SERVICE_ID, 
 							key);
 				}
+				this.entries.put(key, entry);
 			}
 		} catch (FileNotFoundException ex) {
 			/*
