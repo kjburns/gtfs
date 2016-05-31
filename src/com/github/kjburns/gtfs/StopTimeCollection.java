@@ -18,6 +18,7 @@
  *  
  * Revision Log:
  *   2016-05-30  Basic functionality
+ *   2016-05-30  Make getEarliestDepartureTime() public
  */
 package com.github.kjburns.gtfs;
 
@@ -136,7 +137,7 @@ public class StopTimeCollection {
 				.collect(Collectors.toList());
 	}
 	
-	private GregorianCalendar getEarliestDepartureTime(
+	public GregorianCalendar getEarliestDepartureTime(
 			StopTime st, GregorianCalendar date) {
 		if (st.isTimepoint()) {
 			return st.getDepartureTime(date);

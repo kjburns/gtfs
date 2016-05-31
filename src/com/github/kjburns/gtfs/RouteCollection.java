@@ -18,6 +18,7 @@
  *  
  * Revision Log:
  *   2016-05-07  Basic functionality
+ *   2016-05-30  getRouteCount() & iterator()
  */
 package com.github.kjburns.gtfs;
 
@@ -25,6 +26,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 
 import com.github.kjburns.gtfs.misc.CsvFile;
 
@@ -63,5 +65,21 @@ public class RouteCollection {
 	 */
 	public Route getRouteById(String id) {
 		return this.routes.get(id);
+	}
+	
+	/**
+	 * Fetches the number of routes in this collection.
+	 * @return
+	 */
+	public int getRouteCount() {
+		return this.routes.size();
+	}
+	
+	/**
+	 * Gets an iterator for the routes in this collection.
+	 * @return
+	 */
+	public Iterator<Route> iterator() {
+		return this.routes.values().iterator();
 	}
 }

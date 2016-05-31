@@ -18,6 +18,8 @@
  *  
  * Revision Log:
  *   2016-05-30  Basic functionality
+ *   2016-05-30  Bug fix: getNoonOnDate() was using 12-hour hour instead of
+ *               24-hour hour 
  */
 package com.github.kjburns.gtfs;
 
@@ -313,7 +315,7 @@ public class StopTime {
 
 	private GregorianCalendar getNoonOnDate(GregorianCalendar date) {
 		GregorianCalendar ret = (GregorianCalendar)date.clone();
-		ret.set(Calendar.HOUR, 12);
+		ret.set(Calendar.HOUR_OF_DAY, 12);
 		ret.set(Calendar.MINUTE, 0);
 		ret.set(Calendar.SECOND, 0);
 		ret.set(Calendar.MILLISECOND, 0);

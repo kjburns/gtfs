@@ -21,6 +21,7 @@
  *   2016-05-06  Add transfer rules from transfers.txt
  *   2016-05-11  Replace a todo with thrown exception when a stop's parent
  *               station is not really a station
+ *   2016-05-30  getStopCount() & iterator()
  */
 package com.github.kjburns.gtfs;
 
@@ -28,6 +29,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 
 import com.github.kjburns.gtfs.misc.CsvFile;
 
@@ -148,5 +150,21 @@ public class StopCollection {
 		
 		fromStop.addOutgoingTransferRule(rule);
 		toStop.addIncomingTransferRule(rule);
+	}
+
+	/**
+	 * Gets an iterator for the stops in this collection.
+	 * @return
+	 */
+	public Iterator<Stop> iterator() {
+		return this.stops.values().iterator();
+	}
+	
+	/**
+	 * Gets the number of stops in this collection.
+	 * @return
+	 */
+	public int getStopCount() {
+		return this.stops.size();
 	}
 }
