@@ -30,6 +30,7 @@
  *   2016-05-18  Load and process trips.txt
  *   2016-05-30  Load and process stop_times.txt
  * Revision Log:
+ *   2016-06-02  Replace GregorianCalendar functionality with java.time
  */
 package com.github.kjburns.gtfs;
 
@@ -37,10 +38,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
+import java.time.LocalDate;
 import java.util.Iterator;
-import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -281,15 +280,8 @@ public class GtfsFile implements AutoCloseable {
 	public TransitShapeCollection getShapes() {
 		return this.shapes;
 	}
-
-	/**
-	 * Parses a date in yyyymmdd format.
-	 * @param date The date to parse
-	 * @return A GregorianCalendar object set to the specified date, in the
-	 * timezone of the gtfs file, and set to midnight local time.
-	 * @throws ParseException If the string cannot be parsed
-	 */
-	GregorianCalendar parseDate(String date) throws ParseException {
+	
+	LocalDate parseDate(String date) throws ParseException {
 		Matcher m = GtfsFile.DATE_PATTERN.matcher(date);
 		if (!m.matches()) {
 			throw new ParseException(date, 0);
@@ -297,31 +289,16 @@ public class GtfsFile implements AutoCloseable {
 		int year = Integer.valueOf(m.group(1));
 		int month = Integer.valueOf(m.group(2));
 		int day = Integer.valueOf(m.group(3));
-		
-		TimeZone tz = TimeZone.getTimeZone(getTimezone());
-		GregorianCalendar ret = new GregorianCalendar(tz);
-		/*
-		 * read something from the calendar so the time zone will take effect 
-		 */
-		ret.get(Calendar.DAY_OF_MONTH);
-		/*
-		 * now set to midnight local time
-		 */
-		ret.set(Calendar.HOUR, 0);
-		ret.set(Calendar.MINUTE, 0);
-		ret.set(Calendar.SECOND, 0);
-		ret.get(Calendar.HOUR);
-		/*
-		 * now set date
-		 */
-		ret.set(Calendar.YEAR, year);
-		ret.set(Calendar.MONTH, month - 1);
-		ret.set(Calendar.DAY_OF_MONTH, day);
-		ret.get(Calendar.DAY_OF_MONTH);
-		
-		return ret;
+
+		LocalDate ret;
+		try {
+			ret = LocalDate.of(year, month, day);
+			return ret;
+		} catch (Exception ex) {
+			throw new ParseException(date, 0);
+		}
 	}
-	
+
 	ZipWrapper getZipFile() {
 		return this.zipFile;
 	}

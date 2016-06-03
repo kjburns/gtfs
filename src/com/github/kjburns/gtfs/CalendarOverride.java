@@ -18,12 +18,12 @@
  *  
  * Revision Log:
  *   2016-05-15  Basic functionality
+ *   2016-06-02  Replace GregorianCalendar functionality with java.time
  */
 package com.github.kjburns.gtfs;
 
 import java.text.ParseException;
-import java.util.GregorianCalendar;
-
+import java.time.LocalDate;
 import com.github.kjburns.gtfs.misc.CsvFile;
 import com.github.kjburns.gtfs.misc.CsvFile.FieldNotFoundException;
 import com.github.kjburns.gtfs.misc.CsvFile.ReadPastEndOfTableException;
@@ -45,7 +45,7 @@ public class CalendarOverride {
 	private static final String FIELD_NAME_EXCEPTION_TYPE = "exception_type";
 	
 	private String serviceId;
-	private GregorianCalendar date;
+	private LocalDate date;
 	private ExceptionTypeEnum overrideType;
 	
 	/**
@@ -100,17 +100,17 @@ public class CalendarOverride {
 	}
 
 	/**
-	 * Gets the date that this override represents
-	 * @return the date
-	 */
-	public GregorianCalendar getDate() {
-		return this.date;
-	}
-
-	/**
 	 * @return the overrideType
 	 */
 	public ExceptionTypeEnum getOverrideType() {
 		return this.overrideType;
+	}
+
+	/**
+	 * Gets the date that this override represents
+	 * @return the date
+	 */
+	public LocalDate getDate() {
+		return this.date;
 	}
 }

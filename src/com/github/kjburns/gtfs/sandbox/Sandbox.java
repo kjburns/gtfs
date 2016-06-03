@@ -1,13 +1,11 @@
 package com.github.kjburns.gtfs.sandbox;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.GregorianCalendar;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
-import java.util.TimeZone;
-
 import com.github.kjburns.gtfs.DatasetUniquenessException;
 import com.github.kjburns.gtfs.GtfsFile;
 import com.github.kjburns.gtfs.InvalidDataException;
@@ -27,10 +25,10 @@ public class Sandbox {
 		try {
 			gtfs = new GtfsFile(args[0], null);
 			
-			System.err.println("Service IDs");
+			System.out.println("Service IDs______________________");
 			System.out.println(gtfs.getServiceCalendar().getServiceIds());
 			
-			System.err.println("Routes");
+			System.out.println("Routes___________________________");
 			Iterator<Route> rts = gtfs.getRoutes().iterator();
 			while (rts.hasNext()) {
 				Route rt = rts.next();
@@ -38,7 +36,7 @@ public class Sandbox {
 						rt.getShortName() + " " + rt.getLongName());
 			}
 			
-			System.err.println("Trips");
+			System.out.println("Trips____________________________");
 			Iterator<Trip> trips = gtfs.getTrips().getIterator();
 			while (trips.hasNext()) {
 				System.out.println(trips.next().getTripId());
@@ -47,15 +45,14 @@ public class Sandbox {
 			// just get the first stop in the list
 			Stop stop = gtfs.getStops().iterator().next();
 			// do a timetable
-			System.err.println("Sample Timetable for Today: Stop " + stop.getStopId());
+			System.out.println("Sample Timetable for Today: Stop " + stop.getStopId());
 			StopTimeCollection stopTimes = gtfs.getAllTimetables();
-			GregorianCalendar now = new GregorianCalendar(TimeZone.getTimeZone("America/Chicago"));
+			LocalDate now = LocalDate.now(ZoneId.of("America/Chicago"));
 			List<StopTime> timetable = stopTimes.getTimetable(
 					stop.getStopId(), now);
-			SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
+			DateTimeFormatter df = DateTimeFormatter.ISO_LOCAL_TIME;
 			for (StopTime st : timetable) {
-				System.out.print(df.format(
-						stopTimes.getEarliestDepartureTime(st, now).getTime()));
+				System.out.print(stopTimes.getEarliestDepartureTime(st, now).format(df));
 				System.out.print(' ');
 				Trip tr = gtfs.getTrips().getTripById(st.getTripId());
 				Route route = gtfs.getRoutes().getRouteById(tr.getRouteId());
@@ -67,15 +64,29 @@ public class Sandbox {
 			
 			// do a stop listing for the first trip in the list
 			Trip trip = gtfs.getTrips().getIterator().next();
-			System.err.println("Stops on trip " + trip.getTripId());
+			System.out.println("Stops on trip " + trip.getTripId());
 			List<StopTime> timetable2 = stopTimes.getTripSchedule(trip.getTripId());
 			for (StopTime st : timetable2) {
-				System.out.print(df.format(
-						stopTimes.getEarliestDepartureTime(st, now).getTime()));
+				System.out.print(
+						stopTimes.getEarliestDepartureTime(st, now).format(df));
 				System.out.print(' ');
 				stop = gtfs.getStops().getStopById(st.getStopId());
 				System.out.println(stop.getStopName());
 			}
+			
+			// do a timepoint listing for the first trip in the list
+			System.out.println("Timepoints on trip " + trip.getTripId());
+			List<StopTime> timetable3 = 
+					stopTimes.getTripScheduleTimepointsOnly(trip.getTripId());
+			final GtfsFile gtfs2 = gtfs;
+			// playing with streams
+			timetable3.stream().forEach((st) -> {
+				System.out.print(
+						stopTimes.getEarliestDepartureTime(st, now).format(df));
+				System.out.print(' ');
+				Stop stop2 = gtfs2.getStops().getStopById(st.getStopId());
+				System.out.println(stop2.getStopName());
+			});
 		} catch (IOException | InterruptedException | MissingRequiredFieldException | DatasetUniquenessException
 				| InvalidDataException | ParentStationNotStationException | TerminalTimepointException ex) {
 			ex.printStackTrace();

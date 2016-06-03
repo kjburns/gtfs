@@ -20,11 +20,13 @@
  *   2016-05-30  Basic functionality
  *   2016-05-30  Bug fix: getNoonOnDate() was using 12-hour hour instead of
  *               24-hour hour 
+ *   2016-06-02  Replace GregorianCalendar functionality with java.time
  */
 package com.github.kjburns.gtfs;
 
-import java.util.Calendar;
-import java.util.GregorianCalendar;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -80,10 +82,12 @@ public class StopTime {
 	private PickupDropoffTypeEnum dropoffType;
 	private double shapeDistanceTraveled = Double.NaN;
 	private boolean timepoint = true;
+	private GtfsFile gtfs;
 	
-	StopTime(CsvFile table, int record) throws 
+	StopTime(GtfsFile gtfs, CsvFile table, int record) throws 
 			MissingRequiredFieldException, InvalidDataException {
 		this.recordNumber = record;
+		this.gtfs = gtfs;
 		
 		for (int i = 0; i < this.requiredFields.length; i++) {
 			String key = this.requiredFields[i];
@@ -266,66 +270,7 @@ public class StopTime {
 	public boolean isTimepoint() {
 		return this.timepoint;
 	}
-	
-	/**
-	 * Gets the arrival time, if it is defined. In general, it is only
-	 * defined if the stop is a timepoint.
-	 * @param date The date to use as a seed for the return value. The original
-	 * object is not returned.
-	 * @return The arrival time, if it is defined; otherwise, {@code null}.
-	 */
-	public GregorianCalendar getArrivalTime(GregorianCalendar date) {
-		if (this.arrivalTimeOffset == Integer.MIN_VALUE) {
-			return null;
-		}
-		
-		GregorianCalendar ret = getNoonOnDate(date);
-		
-		ret.add(Calendar.SECOND, this.arrivalTimeOffset);
-		/*
-		 * Do dummy pull to fix values
-		 */
-		ret.get(Calendar.SECOND);
 
-		return ret;
-	}
-
-	/**
-	 * Gets the departure time, if it is defined. In general, it is only
-	 * defined if the stop is a timepoint.
-	 * @param date The date to use as a seed for the return value. The
-	 * original object is not returned.
-	 * @return The departure time, if it is defined; otherwise, {@code null}.
-	 */
-	public GregorianCalendar getDepartureTime(GregorianCalendar date) {
-		if (this.departureTimeOffset == Integer.MIN_VALUE) {
-			return null;
-		}
-		
-		GregorianCalendar ret = getNoonOnDate(date);
-		
-		ret.add(Calendar.SECOND, this.departureTimeOffset);
-		/*
-		 * Do dummy pull to fix values
-		 */
-		ret.get(Calendar.SECOND);
-
-		return ret;
-	}
-
-	private GregorianCalendar getNoonOnDate(GregorianCalendar date) {
-		GregorianCalendar ret = (GregorianCalendar)date.clone();
-		ret.set(Calendar.HOUR_OF_DAY, 12);
-		ret.set(Calendar.MINUTE, 0);
-		ret.set(Calendar.SECOND, 0);
-		ret.set(Calendar.MILLISECOND, 0);
-		/*
-		 * Do dummy pull to fix time elements
-		 */
-		ret.get(Calendar.DATE);
-		return ret;
-	}
-	
 	/**
 	 * Gets the trip id for this stop time.
 	 * @return
@@ -350,5 +295,41 @@ public class StopTime {
 	 */
 	public String getStopHeadsign() {
 		return this.tableData.get(FIELD_NAME_STOP_HEADSIGN);
+	}
+	
+	/**
+	 * Gets the arrival time, if it is defined. In general, it is only
+	 * defined if the stop is a timepoint.
+	 * @param date The date to use as a seed for the return value.
+	 * @return The arrival time, if it is defined; otherwise, {@code null}.
+	 */
+	public ZonedDateTime getArrivalTime(LocalDate date) {
+		if (this.arrivalTimeOffset == Integer.MIN_VALUE) {
+			return null;
+		}
+		
+		ZonedDateTime ret = date.atStartOfDay(
+				ZoneId.of(this.gtfs.getTimezone()));
+		ret = ret.withHour(12).withMinute(0).withSecond(0);
+		ret = ret.plusSeconds(arrivalTimeOffset);
+		return ret;
+	}
+
+	/**
+	 * Gets the departure time, if it is defined. In general, it is only
+	 * defined if the stop is a timepoint.
+	 * @param date The date to use as a seed for the return value
+	 * @return The departure time, if it is defined; otherwise, {@code null}.
+	 */
+	public ZonedDateTime getDepartureTime(LocalDate date) {
+		if (this.departureTimeOffset == Integer.MIN_VALUE) {
+			return null;
+		}
+		
+		ZonedDateTime ret = date.atStartOfDay(
+				ZoneId.of(this.gtfs.getTimezone()));
+		ret = ret.withHour(12).withMinute(0).withSecond(0);
+		ret = ret.plusSeconds(departureTimeOffset);
+		return ret;
 	}
 }

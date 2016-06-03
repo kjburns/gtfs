@@ -19,15 +19,19 @@
  * Revision Log:
  *   2016-05-30  Basic functionality
  *   2016-05-30  Make getEarliestDepartureTime() public
+ *   2016-06-02  Replace GregorianCalendar functionality with java.time
+ *   2016-06-02  Generate timepoint-only schedule for a trip
  */
 package com.github.kjburns.gtfs;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -65,7 +69,7 @@ public class StopTimeCollection {
 			CsvFile table = new CsvFile(fis);
 			
 			for (int record = 1; record <= table.getRecordCount(); record++) {
-				StopTime st = new StopTime(table, record);
+				StopTime st = new StopTime(this.gtfs, table, record);
 				
 				ArrayList<StopTime> list;
 				
@@ -114,12 +118,35 @@ public class StopTimeCollection {
 	}
 	
 	/**
+	 * Gets the sequence of timepoints along a particular trip.
+	 * @param tripId trip_id to query
+	 * @return the sequence of timepoints along a trip if defined; otherwise,
+	 * {@code null}.
+	 */
+	public List<StopTime> getTripScheduleTimepointsOnly(String tripId) {
+		if (!this.byTrip.containsKey(tripId)) {
+			return null;
+		}
+		
+		final LocalDate date = LocalDate.now(ZoneId.of(gtfs.getTimezone()));
+		return this.byTrip.get(tripId).stream()
+				.filter((test) -> {
+					return test.isTimepoint();
+				})
+				.sorted((x, y) -> {
+					return x.getDepartureTime(date).compareTo(
+							y.getDepartureTime(date));
+				})
+				.collect(Collectors.toList());
+	}
+	
+	/**
 	 * Gets a timetable for a particular stop.
 	 * @param stopId stop_id to query
 	 * @param date date for the timetable
 	 * @return A list of stop times, sorted by earliest departure time.
 	 */
-	public List<StopTime> getTimetable(String stopId, GregorianCalendar date) {
+	public List<StopTime> getTimetable(String stopId, LocalDate date) {
 		return this.byStop.get(stopId).stream()
 				.filter((test) -> {
 					Trip trip = gtfs.getTrips().getTripById(test.getTripId());
@@ -128,17 +155,13 @@ public class StopTimeCollection {
 							serviceId, date);
 				})
 				.sorted((x, y) -> {
-					return Long.compare(
-							this.getEarliestDepartureTime(x, date)
-								.getTimeInMillis(), 
-							this.getEarliestDepartureTime(y, date)
-								.getTimeInMillis());
+					return this.getEarliestDepartureTime(x, date).compareTo(
+							this.getEarliestDepartureTime(y, date));
 				})
 				.collect(Collectors.toList());
 	}
 	
-	public GregorianCalendar getEarliestDepartureTime(
-			StopTime st, GregorianCalendar date) {
+	public ZonedDateTime getEarliestDepartureTime(StopTime st, LocalDate date) {
 		if (st.isTimepoint()) {
 			return st.getDepartureTime(date);
 		}

@@ -18,12 +18,16 @@
  *  
  * Revision Log:
  *   2016-05-15  Basic functionality
+ *   2016-06-02  Convert GregorianCalendar usage to java.time
  */
 package com.github.kjburns.gtfs;
 
 import java.text.ParseException;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.Calendar;
-import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.github.kjburns.gtfs.misc.CsvFile;
 import com.github.kjburns.gtfs.misc.CsvFile.FieldNotFoundException;
@@ -42,10 +46,12 @@ class CalendarEntry {
 			null, "sunday", "monday", "tuesday", "wednesday", 
 			"thursday", "friday", "saturday"
 	};
+	private static final Map<DayOfWeek, Integer> dayToIndexMap = 
+			mapDaysOfWeek();
 	
 	private String serviceId;
-	private GregorianCalendar startDate;
-	private GregorianCalendar endDate;
+	private LocalDate startDate;
+	private LocalDate endDate;
 	/**
 	 * Indices for this array run [0..7], allowing GregorianCalendar 
 	 * day-of-week constants to be referenced directly as array indices.
@@ -79,8 +85,6 @@ class CalendarEntry {
 			key = FIELD_NAME_END_DATE;
 			value = table.getData(key, record);
 			this.endDate = file.parseDate(value);
-			this.endDate.add(Calendar.DAY_OF_MONTH, 1);
-			this.endDate.add(Calendar.MILLISECOND, -1);
 			
 			for (int i = 1; i <= 7; i++) {
 				key = FIELD_NAMES_DAYS_OF_WEEK[i];
@@ -98,6 +102,20 @@ class CalendarEntry {
 		}
 	}
 	
+	private static Map<DayOfWeek, Integer> mapDaysOfWeek() {
+		HashMap<DayOfWeek, Integer> ret = new HashMap<>();
+		
+		ret.put(DayOfWeek.SUNDAY, Calendar.SUNDAY);
+		ret.put(DayOfWeek.MONDAY, Calendar.MONDAY);
+		ret.put(DayOfWeek.TUESDAY, Calendar.TUESDAY);
+		ret.put(DayOfWeek.WEDNESDAY, Calendar.WEDNESDAY);
+		ret.put(DayOfWeek.THURSDAY, Calendar.THURSDAY);
+		ret.put(DayOfWeek.FRIDAY, Calendar.FRIDAY);
+		ret.put(DayOfWeek.SATURDAY, Calendar.SATURDAY);
+		
+		return ret;
+	}
+
 	private boolean parseBoolean(String value) throws ParseException {
 		if (value.equals("1")) {
 			return true;
@@ -115,25 +133,23 @@ class CalendarEntry {
 	public String getServiceId() {
 		return this.serviceId;
 	}
-
+	
 	/**
-	 * Gets the start date of service for this calendar. The time in the
-	 * return value is midnight.
+	 * Gets the start date of service for this calendar.
 	 * @return the startDate
 	 */
-	public GregorianCalendar getStartDate() {
+	public LocalDate getStartDate() {
 		return this.startDate;
 	}
-
+	
 	/**
-	 * Gets the end date of service for tis calendar. The time in the return
-	 * value is 1 ms before midnight the following day.
+	 * Gets the end date of service for this calendar.
 	 * @return the endDate
 	 */
-	public GregorianCalendar getEndDate() {
+	public LocalDate getEndDate() {
 		return this.endDate;
 	}
-	
+
 	/**
 	 * Determines whether this calendar entry specifies service on the
 	 * provided day of the week.
@@ -142,7 +158,23 @@ class CalendarEntry {
 	 * @return {@code true} if the supplied day of the week is defined to
 	 * have service; {@code false} otherwise.
 	 */
-	public boolean getHasServiceOn(int day) {
+	private boolean getHasServiceOn(int day) {
 		return this.dailyService[day];
+	}
+	
+	/**
+	 * Determines whether this calendar entry specifies service on the
+	 * provided day of the week.
+	 * @param day Day of the week.
+	 * @return {@code true} if the supplied day of the week is defined to
+	 * have service; {@code false} otherwise. Returns {@code false} if the
+	 * argument is null.
+	 */
+	public boolean getHasServiceOn(DayOfWeek dayOfWeek) {
+		if (dayOfWeek == null) {
+			return false;
+		}
+		
+		return this.getHasServiceOn(dayToIndexMap.get(dayOfWeek));
 	}
 }

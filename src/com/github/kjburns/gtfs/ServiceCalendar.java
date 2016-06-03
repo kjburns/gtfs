@@ -18,6 +18,7 @@
  *  
  * Revision Log:
  *   2016-05-15  Basic functionality
+ *   2016-06-02  Replace GregorianCalendar functionality with java.time
  */
 package com.github.kjburns.gtfs;
 
@@ -25,14 +26,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
-import java.util.TimeZone;
-
 import com.github.kjburns.gtfs.misc.CsvFile;
 
 /**
@@ -43,8 +41,8 @@ import com.github.kjburns.gtfs.misc.CsvFile;
 public class ServiceCalendar {
 	private GtfsFile gtfs;
 	private HashMap<String, CalendarEntry> entries = new HashMap<>();
-	private HashMap<String, HashMap<Long, CalendarOverride>> 
-			overrides =	new HashMap<>();
+	private HashMap<String, HashMap<LocalDate, CalendarOverride>> overrides =
+			new HashMap<>();
 	
 	/**
 	 * Constructor. Reads calendar.txt and calendar_dates.txt to get service
@@ -113,24 +111,25 @@ public class ServiceCalendar {
 						new CalendarOverride(gtfs, table, record);
 				String serviceId = co.getServiceId();
 				
-				HashMap<Long, CalendarOverride>	overrideMapForService;
+				HashMap<LocalDate, CalendarOverride> overrideMapForService;
 				if (this.overrides.containsKey(serviceId)) {
 					overrideMapForService = this.overrides.get(serviceId);
 				}
 				else {
 					overrideMapForService = 
-							new HashMap<Long, CalendarOverride>();
+							new HashMap<LocalDate, CalendarOverride>();
 					this.overrides.put(serviceId, overrideMapForService);
 				}
 				
-				long key = this.makeYMD(co.getDate());
+				LocalDate key = co.getDate();
 				if (overrideMapForService.containsKey(key)) {
-					SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
+					DateTimeFormatter df = 
+							DateTimeFormatter.ofPattern("yyyy MM dd");
 					throw new DatasetUniquenessException(
 							GtfsFile.FILENAME_CALENDAR_OVERRIDES, 
 							CalendarOverride.FIELD_NAME_SERVICE_ID + "+" + 
 									CalendarOverride.FIELD_NAME_DATE, 
-							serviceId + "+" + df.format(key));
+							serviceId + "+" + key.format(df));
 				}
 				overrideMapForService.put(key, co);
 			}
@@ -163,34 +162,30 @@ public class ServiceCalendar {
 	/**
 	 * Determines whether a particular service id is available on a date. 
 	 * @param serviceId service_id to query
-	 * @param cal date to query
+	 * @param date date to query
 	 * @return {@code true} if service is defined on that date; {@code false}
 	 * otherwise.
 	 */
-	public boolean isServiceDefinedOn(
-			String serviceId, GregorianCalendar cal) {
+	public boolean isServiceDefinedOn(String serviceId, LocalDate date) {
 		boolean available = false;
 		
 		CalendarEntry entry = this.entries.get(serviceId);
-		long ymd = this.makeYMD(cal);
 		if (entry != null) {
-			long startYmd = this.makeYMD(entry.getStartDate());
-			long endYmd = this.makeYMD(entry.getEndDate());
-			
-			if ((ymd < startYmd) || (ymd > endYmd)) {
+			if (date.isBefore(entry.getStartDate()) || 
+					date.isAfter(entry.getEndDate())) {
 				available = false;
 			}
 			else {
-				if (entry.getHasServiceOn(cal.get(Calendar.DAY_OF_WEEK))) {
+				if (entry.getHasServiceOn(date.getDayOfWeek())) {
 					available = true;
 				}
 			}
 		}
 		
-		HashMap<Long, CalendarOverride> serviceOverrides = 
+		HashMap<LocalDate, CalendarOverride> serviceOverride = 
 				this.overrides.get(serviceId);
-		if (serviceOverrides != null) {
-			CalendarOverride exc = serviceOverrides.get(ymd);
+		if (serviceOverride != null) {
+			CalendarOverride exc = serviceOverride.get(date);
 			if (exc != null) {
 				switch(exc.getOverrideType()) {
 				case SERVICE_ADDED:
@@ -210,44 +205,5 @@ public class ServiceCalendar {
 		}
 		
 		return available;
-	}
-	
-	/**
-	 * Determines whether a particular service id is available on a date. 
-	 * <p>
-	 * This method does not check for date composition blunders directly
-	 * (e.g., 29 February on a non-leap-year, 31 April in any year). Instead
-	 * the values are fed into GregorianCalendar, and any errors are handled
-	 * according to that specification.
-	 * </p>
-	 * @param serviceId service_id to query
-	 * @param yr year of date to check
-	 * @param mo month of date to check
-	 * @param dy day of date to check
-	 * @return {@code true} if service is defined on that date; {@code false}
-	 * otherwise.
-	 */
-	public boolean isServiceDefinedOn(
-			String serviceId, int yr, int mo, int dy) {
-		return this.isServiceDefinedOn(serviceId, this.makeGc(yr, mo, dy));
-	}
-	
-	private GregorianCalendar makeGc(int yr, int mo, int dy) {
-		TimeZone tz = TimeZone.getTimeZone(this.gtfs.getTimezone());
-		GregorianCalendar ret = new GregorianCalendar(tz);
-		
-		ret.set(yr, mo - 1, dy);
-		
-		return ret;
-	}
-	
-	private long makeYMD(GregorianCalendar gc) {
-		return this.makeYMD(gc.get(Calendar.YEAR), 
-							gc.get(Calendar.MONTH) + 1, 
-							gc.get(Calendar.DAY_OF_MONTH));
-	}
-	
-	private long makeYMD(int yr, int mo, int dy) {
-		return yr * 10000 + mo * 100 + dy;
 	}
 }
